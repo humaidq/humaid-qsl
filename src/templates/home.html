@@ -1,0 +1,168 @@
+{{ template "head" . }}
+<form method="post">
+  <input type="hidden" name="_csrf" value="{{ .CSRFToken }}" />
+  {{ if .Error }}
+  <div class="alert alert-red">
+    <h5 class="alert-title">Uh-oh!</h5>
+    <p>{{.Error}}</p>
+  </div>
+  {{end}}
+
+  <p>
+    Hello! This is my QSL log. If you had a QSO with me, you should be able to
+    find it below. Just make sure you find the timestamp of when we had the QSO so
+    it can be matched with my logs.
+  </p>
+
+  <h2>Find Your QSO</h2>
+  <p>Enter your call sign and the approximate time of our contact (UTC):</p>
+
+  <div>
+    <label for="callsign"><strong>Call Sign</strong></label>
+    <br>
+    <input
+      type="text"
+      name="callsign"
+      id="callsign"
+      class="wide"
+      placeholder="e.g. A62A"
+      style="text-transform: uppercase;"
+      required
+    />
+  </div>
+
+  <div>
+    <label><strong>Date & Time (UTC)</strong></label>
+    <br>
+    <div class="datetime-inputs">
+      <input
+        type="number"
+        name="year"
+        id="year"
+        placeholder="YYYY"
+        min="2000"
+        max="2100"
+        maxlength="4"
+        required
+      />
+      <span>-</span>
+      <input
+        type="number"
+        name="month"
+        id="month"
+        placeholder="MM"
+        min="1"
+        max="12"
+        maxlength="2"
+        required
+      />
+      <span>-</span>
+      <input
+        type="number"
+        name="day"
+        id="day"
+        placeholder="DD"
+        min="1"
+        max="31"
+        maxlength="2"
+        required
+      />
+      <span>&nbsp;&nbsp;</span>
+      <input
+        type="number"
+        name="hour"
+        id="hour"
+        placeholder="HH"
+        min="0"
+        max="23"
+        maxlength="2"
+        required
+      />
+      <span>:</span>
+      <input
+        type="number"
+        name="minute"
+        id="minute"
+        placeholder="MM"
+        min="0"
+        max="59"
+        maxlength="2"
+        required
+      />
+    </div>
+    <br>
+    <small>Enter the approximate time of our QSO (24-hour format). We'll search within ±10 minutes.</small>
+  </div>
+
+  <button type="submit" class="btn wide">Find QSO →</button>
+</form>
+
+<h3>Statistics</h3>
+<p><strong>Total QSOs:</strong> {{ .TotalQSOs }} | <strong>Unique Countries:</strong> {{ .UniqueCountries }}</p>
+
+{{ template "latest-qsos" . }}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const inputs = ['year', 'month', 'day', 'hour', 'minute'];
+  const maxLengths = [4, 2, 2, 2, 2];
+
+  // Find the first empty field or the last field if all are filled
+  function findFocusField() {
+    for (let i = 0; i < inputs.length; i++) {
+      const input = document.getElementById(inputs[i]);
+      if (!input.value || input.value.length < maxLengths[i]) {
+        return i;
+      }
+    }
+    return inputs.length - 1; // Last field if all are complete
+  }
+
+  // Set initial focus to appropriate field
+  setTimeout(() => {
+    const focusIndex = findFocusField();
+    const focusInput = document.getElementById(inputs[focusIndex]);
+    if (focusInput) {
+      focusInput.focus();
+      focusInput.setSelectionRange(focusInput.value.length, focusInput.value.length);
+    }
+  }, 100);
+
+  inputs.forEach((id, index) => {
+    const input = document.getElementById(id);
+    if (input) {
+      input.addEventListener('input', function() {
+        if (this.value.length >= maxLengths[index] && index < inputs.length - 1) {
+          document.getElementById(inputs[index + 1]).focus();
+        }
+      });
+
+      input.addEventListener('keydown', function(e) {
+        if (e.key === 'Backspace') {
+          // If field is empty, move to previous field
+          if (this.value === '' && index > 0) {
+            e.preventDefault();
+            const prevInput = document.getElementById(inputs[index - 1]);
+            prevInput.focus();
+            setTimeout(() => {
+              prevInput.setSelectionRange(prevInput.value.length, prevInput.value.length);
+            }, 0);
+          }
+          // If field has one character and cursor is at the end, delete and move to previous field
+          else if (this.value.length === 1 && this.selectionStart === 1 && index > 0) {
+            e.preventDefault();
+            this.value = '';
+            const prevInput = document.getElementById(inputs[index - 1]);
+            prevInput.focus();
+            setTimeout(() => {
+              prevInput.setSelectionRange(prevInput.value.length, prevInput.value.length);
+            }, 0);
+          }
+        }
+      });
+    }
+  });
+});
+</script>
+
+{{ template "foot" . }}

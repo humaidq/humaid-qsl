@@ -1,0 +1,542 @@
+/*
+ * Copyright 2025 Humaid Alqasimi
+ * SPDX-License-Identifier: Apache-2.0
+ */
+/* Page style matching your website */
+html {
+  overflow-y: scroll;
+  scroll-behavior: smooth;
+  font-family:
+    inter,
+    -apple-system,
+    blinkmacsystemfont,
+    source sans pro,
+    roboto,
+    sans-serif;
+}
+
+body {
+  font-size: 1.15em;
+  line-height: 1.4em;
+  background-color: #edeee6;
+  max-width: 55em;
+  margin: 0 auto;
+  color: #000;
+}
+
+main {
+  background-color: #fefefe;
+  padding: 1.1em 2em;
+}
+
+.nav {
+  background-color: #134dae;
+  margin: 0;
+  padding: 0.5em 0;
+}
+
+.nav a {
+  margin: 0;
+  padding: 0.5em 0;
+  text-decoration: none;
+}
+
+.nav a:hover {
+  text-decoration: underline;
+}
+
+.nav a:focus {
+  color: #000;
+  background-color: #ffbf47;
+}
+
+.nav,
+.nav a {
+  color: #fefefe;
+}
+
+.nav-active {
+  background-color: #fefefe !important;
+  color: #000 !important;
+  padding: 0.5em 0.4em !important;
+  display: inline-block !important;
+  margin: -0.5em 0 !important;
+  vertical-align: top !important;
+}
+
+footer {
+  padding: 1rem;
+  text-align: center;
+  background-color: #000;
+  color: #cccccc;
+}
+
+footer a {
+  color: #eeeeee;
+}
+
+footer p {
+  margin: 0 0 0 0.2em;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  color: #333;
+  margin: 0.5em 0;
+  line-height: 1;
+}
+
+.title {
+  font-size: 2.5em;
+  font-weight: 700;
+  text-align: center;
+  margin: 0.6em 0;
+  padding: 0 2em;
+}
+
+.c {
+  text-align: center;
+}
+
+p {
+  margin: 0.5em 0;
+}
+
+a {
+  color: #134dae;
+}
+
+a:focus {
+  outline: 0.2rem solid #ffbf47;
+}
+
+.muted-text {
+  color: #6f6f6f;
+  font-size: 0.9rem;
+}
+
+blockquote {
+  color: #666;
+  border-left: 4px solid #ccc;
+  padding-left: 8px;
+  margin-left: 0;
+}
+
+pre {
+  padding: 4px;
+}
+
+code, pre {
+  background-color: #efefef;
+  border-radius: 3px;
+}
+
+.badge {
+  background: #dedede;
+  padding: 2px 5px;
+  border-radius: 4px;
+  color: #3f3f3f;
+}
+
+.btn {
+  display: inline-block;
+  font-align: center;
+  color: #333;
+  background-color: #fafafa;
+  padding: 3px 5px;
+  border: #ccc 1px solid;
+  text-decoration: none;
+}
+
+.btn:focus {
+  border: #888 1px solid;
+}
+
+.btn-danger {
+  background-color: var(--danger-btn);
+  color: #fff;
+}
+
+/* Alert */
+.alert {
+  display: block;
+  margin: 15px 0;
+  padding: 8px 16px;
+  color: #000;
+  border-radius: 5px;
+}
+
+.alert-title {
+  font-weight: bold;
+  margin: 0 0 0.5em 0;
+}
+
+.alert-green {
+  background-color: #a7f9a7;
+}
+
+.alert-grey {
+  background-color: #d7d7d7;
+}
+
+.alert-yellow {
+  background-color: #fcef37;
+}
+
+.alert-red {
+  background-color: #f9a7b6;
+}
+textarea, input {
+  border-radius: 0;
+  border: #ccc 1px solid;
+  padding: 4px 6px;
+  max-width: 100%;
+}
+
+/* Hide number input arrows */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Date time inputs styling */
+.datetime-inputs {
+  display: inline-block;
+}
+
+.datetime-inputs input {
+  width: 24pt;
+  padding: 2px 4px;
+  text-align: center;
+  margin: 0 2px;
+  font-family: monospace;
+}
+
+.datetime-inputs input#year {
+  width: 32pt;
+}
+
+/* Monospace for all inputs */
+input {
+  font-family: monospace;
+}
+
+/* QSO summary table styling */
+.qso-summary {
+  width: 100%;
+  max-width: 100%;
+  margin: 20px auto;
+  border-collapse: collapse;
+  border: 2px solid #ccc;
+  font-size: 0.9rem;
+}
+
+.qso-summary th,
+.qso-summary td {
+  border: 1px solid #ccc;
+  padding: 6px 8px;
+  text-align: center;
+}
+
+.qso-summary th {
+  background-color: #f5f5f5;
+  font-weight: bold;
+}
+
+/* Mobile responsiveness for QSO table */
+@media only screen and (max-width: 780px) {
+  .qso-summary {
+    font-size: 0.8rem;
+    margin: 10px 0;
+  }
+
+  .qso-summary th,
+  .qso-summary td {
+    padding: 4px 6px;
+  }
+
+  .qso-summary th {
+    font-size: 0.75rem;
+  }
+
+  .qso-summary small {
+    font-size: 0.65rem;
+  }
+}
+
+@media only screen and (max-width: 600px) {
+  .qso-summary {
+    font-size: 0.7rem;
+  }
+
+  .qso-summary th,
+  .qso-summary td {
+    padding: 3px 4px;
+  }
+
+  .qso-summary th {
+    font-size: 0.7rem;
+  }
+
+  .qso-summary small {
+    font-size: 0.6rem;
+  }
+}
+
+/* Latest QSOs table styling */
+.latest-qsos {
+  border: none;
+  border-collapse: collapse;
+}
+
+.latest-qsos th {
+  border: none;
+  padding: 4px 8px;
+  text-align: left;
+  font-weight: bold;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.latest-qsos td {
+  border: none;
+  padding: 2px 8px;
+  text-align: left;
+}
+
+textarea:focus, input:focus {
+  border: #888 1px solid;
+}
+
+label {
+  display: inline-block;
+}
+
+.item-title {
+  font-weight: bold;
+}
+
+.form-item {
+  display: block;
+  width: 100%;
+  margin-top: 5px;
+}
+
+.form-group {
+  padding-bottom: 10px;
+}
+
+/* Responsive Layout */
+.col-1 {
+  width: 8.33%;
+}
+
+.col-2 {
+  width: 16.66%;
+}
+
+.col-3 {
+  width: 25%;
+}
+
+.col-4 {
+  width: 33.33%;
+}
+
+.col-5 {
+  width: 41.66%;
+}
+
+.col-6 {
+  width: 50%;
+}
+
+.col-7 {
+  width: 58.33%;
+}
+
+.col-8 {
+  width: 66.66%;
+}
+
+.col-9 {
+  width: 75%;
+}
+
+.col-10 {
+  width: 83.33%;
+}
+
+.col-11 {
+  width: 91.66%;
+}
+
+.col-12 {
+  width: 100%;
+}
+
+/* Mobile responsiveness */
+@media only screen and (max-width: 780px) {
+  body {
+    font-size: 1em;
+  }
+  p {
+    margin: 0;
+  }
+  textarea {
+    max-width: 100%;
+  }
+}
+
+@media only screen and (max-width: 860px) {
+  [class*="col-"] {
+    width: 100%;
+  }
+}
+
+section {
+  width: 100%;
+}
+
+.index {
+  display: flex;
+  flex-direction: row;
+}
+
+.index aside {
+  width: 40%;
+}
+
+.entry {
+  display: block;
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.entry a {
+  display: block;
+}
+
+.project a {
+  display: inline;
+}
+
+.meta a {
+  padding: 0;
+}
+
+.meta p {
+  margin: 0.3em 0 0 1.4em;
+}
+
+/* Images */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Code blocks */
+pre {
+  font-family:
+    "SFMono-Regular", "Source Code Pro", "Consolas", "Liberation Mono",
+    monospace;
+  padding: 0.25rem 1rem;
+  margin: 0 -1rem;
+  overflow-x: auto;
+  border-radius: 3px;
+}
+
+code:not(pre code) {
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  border-radius: 3px;
+  font-size: 1rem;
+  padding: 0.2em;
+}
+
+/* Responsiveness */
+@media only screen and (max-width: 48rem) {
+  body {
+    font-size: 1.1em;
+  }
+
+  .index {
+    display: block;
+  }
+
+  .index .container,
+  .index aside {
+    width: 100%;
+  }
+}
+
+@media only screen and (min-width: 60rem) {
+  article {
+    padding: 0 10%;
+  }
+}
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #252525;
+    color: #eee;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    color: #eee;
+  }
+
+  main {
+    background-color: #303030 !important;
+  }
+
+  a {
+    color: #acbbf9;
+  }
+
+  .alert {
+    color: #efefef;
+  }
+
+  .alert-green {
+    background-color: #328732;
+  }
+
+  .alert-grey {
+    background-color: #3c4043;
+  }
+
+  .meta p {
+    color: #aaa;
+  }
+
+  textarea, input {
+    background-color: #434449;
+    border-color: #666;
+    color: #efefef;
+  }
+
+  .btn {
+    background-color: #3c4043;
+    color: #feffff;
+    border-color: #666;
+  }
+
+  .qso-summary {
+    border-color: #666;
+  }
+
+  .qso-summary th,
+  .qso-summary td {
+    border-color: #666;
+  }
+
+  .qso-summary th {
+    background-color: #3c4043;
+  }
+}

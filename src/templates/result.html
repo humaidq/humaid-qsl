@@ -1,0 +1,107 @@
+{{ template "head" . }}
+<h2>A66H</h2>
+<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+{{ with .QSO }}
+  <div>
+    <b>Humaid Alqasimi</b><br>
+    P.O. Box 2202<br>
+    Ajman<br>
+    United Arab Emirates<br>
+    {{if .MyGridSquare }}
+      <b>Grid:</b> {{.MyGridSquare}}
+    {{end}}
+  </div>
+  <div style="text-align: right; margin-left: 20px;">
+    {{ if .MyRig }}
+    <div>
+      {{ .MyRig }}{{ if .TxPwr }} ({{ .TxPwr }}W){{ end }}
+      <input type="checkbox" disabled checked style="margin-right: 5px;">
+    </div>
+    {{ end }}
+    {{ if .MyAntenna }}
+    <div style="margin-top: 5px;">
+      {{ .MyAntenna }}
+      <input type="checkbox" disabled checked style="margin-right: 5px;">
+    </div>
+    {{ end }}
+  </div>
+{{ end }}
+</div>
+
+{{ if .QSO.Name }}
+<p>Hello {{ .QSO.Name }}!</p>
+{{ end }}
+<p>Confirming our QSO</p>
+
+{{ with .QSO }}
+<div class="qso-result">
+
+  <table class="qso-summary">
+    <tr>
+      <th>To Radio</th>
+      <th>Date<br><small>Year Month Day</small></th>
+      <th>Time<br><small>UTC</small></th>
+      <th>Freq.<br><small>MHz</small></th>
+      <th>Report<br><small>{{ if or (eq .Mode "FT8") (eq .Mode "FT4") (eq .Mode "JS8") (eq .Mode "MSK144") (eq .Mode "JT65") (eq .Mode "JT9") }}dB &middot; <del>RST</del>{{ else }}<del>dB</del> &middot; RST{{ end }}</small></th>
+      <th>Mode<br><small>2-Way</small></th>
+    </tr>
+    <tr>
+      <td>{{ .Call }}</td>
+      <td>{{ .FormatDate }}</td>
+      <td>{{ .FormatTime }}</td>
+      <td>{{ .Freq }}</td>
+      <td>{{ if .RSTRcvd }}{{ .RSTRcvd }}{{ else }}-{{ end }}</td>
+      <td>{{ .Mode }}</td>
+    </tr>
+  </table>
+
+  {{ if eq .QslRcvd "Y" }}
+  <div class="alert alert-green">
+    <h5 class="alert-title">Tnx QSL!</h5>
+    <p>Thank you for the QSL card, it has been received and appreciated!</p>
+    {{if eq .QslSent "Y"}}
+    <p>A QSL card was already sent to your address.</p>
+    {{else}}
+    <p>I will be sending a response QSL card soon!</p>
+    {{end}}
+  </div>
+  {{else}}
+    {{ if eq .QslSent "Y" }}
+    <div class="alert alert-green">
+      <h5 class="alert-title">QSL Card Sent</h5>
+      <p>A QSL card has been sent to your mailing address!</p>
+    </div>
+    {{ else if or (or (eq .QslSent "N") (eq .QslSent "")) (eq .QslSent "I") }}
+    <div class="alert alert-grey">
+      <h5 class="alert-title">QSL Card Available</h5>
+      <p>If you would like a free QSL card delivered, <a href="mailto:qsl@huma.id?subject={{ .Call }}: QSL Card Request&body=Hello,%0A%0AI would like to request a QSL card for our contact:%0A%0ACall Sign: {{ .Call }}%0ADate/Time: {{ .FormatQSOTime }}%0AFrequency: {{ .Freq }} MHz%0A%0AMy mailing address:%0A[Please write your full mailing address here]%0A%0AThank you!">click here</a>.</p>
+      {{if eq .QslSent "I"}}
+      <p>I have checked your QRZ.com page, and couldn't find a valid address. So please update your mailing address on QRZ.com or send it with the email.</p>
+      {{end}}
+    </div>
+    {{ end }}
+  {{ end }}
+
+</div>
+{{ end }}
+
+{{ if .AllQSOs }}
+<h3>All QSOs with {{ .QSO.Call }} ({{ len .AllQSOs }} total)</h3>
+{{ range .AllQSOs }}
+  <div class="entry">
+    {{ if eq .Timestamp $.QSO.Timestamp }}
+    <span style="color: #666; text-decoration: none;">
+      {{ .FormatDate }} at {{ .FormatTime }} UTC (current)
+    </span>
+    {{ else }}
+    <a href="/{{ .Call }}-{{ .Timestamp.Unix }}">
+      {{ .FormatDate }} at {{ .FormatTime }} UTC
+    </a>
+    {{ end }}
+    <div class="meta">
+      <p>{{ .Freq }} MHz &middot; {{ .Mode }} &middot; {{ .Band }} band{{ if .RSTRcvd }} &middot; Signal: {{ .RSTRcvd }}{{ end }}{{ if .Name }} &middot; {{ .Name }}{{ end }}</p>
+    </div>
+  </div>
+{{ end }}
+{{ end }}
+{{ template "foot" . }}

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="/normalize-8.0.1.min.css" />
+    <link rel="stylesheet" href="/main.css" />
+    <title>QSL - Humaid Alqasimi</title>
+    <link rel="icon" href="/favicon.ico" />
+  </head>
+  <body>
+    <header>
+      <h1 class="title">Humaid Alqasimi</h1>
+      <nav>
+        <p class="c nav">
+          <a href="https://huma.id">Home</a>
+          {{ if .Callsign }}
+          · <a href="/">QSL</a>
+          · <span class="nav-active">{{ .Callsign }}</span>
+          {{ else }}
+          · <span class="nav-active">QSL</span>
+          {{ end }}
+        </p>
+      </nav>
+    </header>
+    <main>

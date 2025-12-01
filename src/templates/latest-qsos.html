@@ -1,0 +1,28 @@
+<h3>Latest QSOs</h3>
+<table class="latest-qsos">
+  <thead>
+    <tr>
+      <th>Call Sign</th>
+      <th>Country</th>
+      <th>Date</th>
+      <th>Band</th>
+      <th>Mode</th>
+    </tr>
+  </thead>
+  <tbody>
+{{ range .LatestQSOs }}
+    <tr>
+      <td>{{ .Call }}</td>
+      <td>
+        {{ if .GetFlagCode }}
+        <img src="https://flagcdn.com/{{ .GetFlagCode }}.svg" alt="{{ .Country }}" style="width: 16px; height: 12px; margin-right: 0.3em; vertical-align: middle; background-color: #f0f0f0; padding: 1px;" />
+        {{ end }}
+        {{ .Country }}
+      </td>
+      <td>{{ .FormatDate }}</td>
+      <td>{{ .Band }}</td>
+      <td>{{ .Mode }}</td>
+    </tr>
+{{ end }}
+  </tbody>
+</table>
