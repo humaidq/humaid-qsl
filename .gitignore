@@ -28,7 +28,7 @@ go.work.sum
 .direnv/
 result
 
-qsl
+humaid-qsl
 *.log
 *.adi
 *.adif

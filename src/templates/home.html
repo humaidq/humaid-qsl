@@ -107,62 +107,115 @@ document.addEventListener('DOMContentLoaded', function() {
   const inputs = ['year', 'month', 'day', 'hour', 'minute'];
   const maxLengths = [4, 2, 2, 2, 2];
 
-  // Find the first empty field or the last field if all are filled
+  // Clear all inputs on page load
+  const callsignInput = document.getElementById('callsign');
+  if (callsignInput) callsignInput.value = '';
+  inputs.forEach(id => {
+    const input = document.getElementById(id);
+    if (input) input.value = '';
+  });
+
+  function safeSetCursorToEnd(input) {
+    if (!input) return;
+    const len = (input.value || '').toString().length;
+    try {
+      input.setSelectionRange(len, len);
+    } catch (e) {
+      // number inputs don't support setSelectionRange in some browsers – ignore
+    }
+  }
+
+  // Find the first incomplete field, or last if all complete
   function findFocusField() {
     for (let i = 0; i < inputs.length; i++) {
       const input = document.getElementById(inputs[i]);
-      if (!input.value || input.value.length < maxLengths[i]) {
+      if (!input) continue;
+      if (!input.value || input.value.toString().length < maxLengths[i]) {
         return i;
       }
     }
-    return inputs.length - 1; // Last field if all are complete
+    return inputs.length - 1;
   }
 
-  // Set initial focus to appropriate field
+  // Focus on callsign field on page load
   setTimeout(() => {
-    const focusIndex = findFocusField();
-    const focusInput = document.getElementById(inputs[focusIndex]);
-    if (focusInput) {
-      focusInput.focus();
-      focusInput.setSelectionRange(focusInput.value.length, focusInput.value.length);
+    if (callsignInput) {
+      callsignInput.focus();
     }
   }, 100);
 
   inputs.forEach((id, index) => {
     const input = document.getElementById(id);
-    if (input) {
-      input.addEventListener('input', function() {
-        if (this.value.length >= maxLengths[index] && index < inputs.length - 1) {
-          document.getElementById(inputs[index + 1]).focus();
-        }
-      });
+    if (!input) return;
 
-      input.addEventListener('keydown', function(e) {
-        if (e.key === 'Backspace') {
-          // If field is empty, move to previous field
-          if (this.value === '' && index > 0) {
-            e.preventDefault();
-            const prevInput = document.getElementById(inputs[index - 1]);
-            prevInput.focus();
-            setTimeout(() => {
-              prevInput.setSelectionRange(prevInput.value.length, prevInput.value.length);
-            }, 0);
-          }
-          // If field has one character and cursor is at the end, delete and move to previous field
-          else if (this.value.length === 1 && this.selectionStart === 1 && index > 0) {
-            e.preventDefault();
-            this.value = '';
-            const prevInput = document.getElementById(inputs[index - 1]);
-            prevInput.focus();
-            setTimeout(() => {
-              prevInput.setSelectionRange(prevInput.value.length, prevInput.value.length);
-            }, 0);
-          }
+    input.addEventListener('input', function (e) {
+      // Enforce max length manually (maxlength is ignored on type="number")
+      if (this.value && this.value.toString().length > maxLengths[index]) {
+        this.value = this.value.toString().slice(0, maxLengths[index]);
+      }
+
+      // Auto-move forward when field is filled, but not when deleting
+      const isDelete =
+        e.inputType && (e.inputType.startsWith('delete') || e.inputType === 'deleteContentBackward');
+      if (
+        !isDelete &&
+        this.value &&
+        this.value.toString().length >= maxLengths[index] &&
+        index < inputs.length - 1
+      ) {
+        const nextInput = document.getElementById(inputs[index + 1]);
+        if (nextInput) {
+          nextInput.focus();
+          safeSetCursorToEnd(nextInput);
         }
-      });
-    }
+      }
+    });
+
+    input.addEventListener('keydown', function (e) {
+      // Ignore common date/time delimiters and symbols in numeric fields
+      const ignoredKeys = ['/', '-', ':', '.', ',', ' ', '_', '\\', '|', ';'];
+      if (ignoredKeys.includes(e.key)) {
+        e.preventDefault();
+        return;
+      }
+
+      if (index === 0) return; // nothing before "year"
+
+      const prevInput = document.getElementById(inputs[index - 1]);
+
+      // DELETE: always jump to previous box
+      if (e.key === 'Delete' && prevInput) {
+        e.preventDefault();
+        prevInput.focus();
+        safeSetCursorToEnd(prevInput);
+        return;
+      }
+
+      if (e.key === 'Backspace' && prevInput) {
+        const valueStr = (this.value || '').toString();
+        const atStart =
+          this.selectionStart === 0 &&
+          this.selectionEnd === 0;
+
+        // If field is empty, go to previous field
+        if (valueStr.length === 0) {
+          e.preventDefault();
+          prevInput.focus();
+          safeSetCursorToEnd(prevInput);
+          return;
+        }
+
+        // If caret is at start, go to previous field
+        if (atStart) {
+          e.preventDefault();
+          prevInput.focus();
+          safeSetCursorToEnd(prevInput);
+        }
+      }
+    });
   });
 });
+
 </script>
 
 {{ template "foot" . }}

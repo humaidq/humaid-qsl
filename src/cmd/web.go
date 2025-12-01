@@ -49,6 +49,14 @@ var CmdStart = &cli.Command{
 	Action: start,
 }
 
+// populateHomeData fills the template data with common home page data
+func populateHomeData(data template.Data, parser *utils.ADIFParser, csrf csrf.CSRF) {
+	data["TotalQSOs"] = parser.GetTotalQSOCount()
+	data["UniqueCountries"] = parser.GetUniqueCountriesCount()
+	data["LatestQSOs"] = parser.GetLatestQSOs(30)
+	data["CSRFToken"] = csrf.Token()
+}
+
 func start(ctx context.Context, cmd *cli.Command) (err error) {
 	// Load ADIF file
 	adifPath := cmd.String("adif")
@@ -108,10 +116,7 @@ func start(ctx context.Context, cmd *cli.Command) (err error) {
 	})
 
 	f.Get("/", func(t template.Template, data template.Data, parser *utils.ADIFParser, x csrf.CSRF) {
-		data["TotalQSOs"] = parser.GetTotalQSOCount()
-		data["UniqueCountries"] = parser.GetUniqueCountriesCount()
-		data["LatestQSOs"] = parser.GetLatestQSOs(30)
-		data["CSRFToken"] = x.Token()
+		populateHomeData(data, parser, x)
 		t.HTML(http.StatusOK, "home")
 	})
 
@@ -162,14 +167,14 @@ func start(ctx context.Context, cmd *cli.Command) (err error) {
 		// Validate inputs
 		if callsign == "" {
 			data["Error"] = "Call sign is required"
-			data["CSRFToken"] = x.Token()
+			populateHomeData(data, parser, x)
 			t.HTML(http.StatusBadRequest, "home")
 			return
 		}
 
 		if year == "" || month == "" || day == "" || hour == "" || minute == "" {
 			data["Error"] = "All date and time fields are required"
-			data["CSRFToken"] = x.Token()
+			populateHomeData(data, parser, x)
 			t.HTML(http.StatusBadRequest, "home")
 			return
 		}
@@ -179,7 +184,7 @@ func start(ctx context.Context, cmd *cli.Command) (err error) {
 		searchTime, err := time.Parse("2006-01-02T15:04", timestampStr)
 		if err != nil {
 			data["Error"] = "Invalid date and time values"
-			data["CSRFToken"] = x.Token()
+			populateHomeData(data, parser, x)
 			t.HTML(http.StatusBadRequest, "home")
 			return
 		}
@@ -208,7 +213,7 @@ func start(ctx context.Context, cmd *cli.Command) (err error) {
 
 		if len(qsos) == 0 {
 			data["Error"] = fmt.Sprintf("No QSO found for %s around %s UTC", callsign, searchTime.Format("2006-01-02 15:04"))
-			data["CSRFToken"] = x.Token()
+			populateHomeData(data, parser, x)
 			t.HTML(http.StatusOK, "home")
 			return
 		}
