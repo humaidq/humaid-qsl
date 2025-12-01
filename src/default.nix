@@ -9,7 +9,7 @@ pkgs.buildGoModule {
   src = ./.;
 
   # The vendor hash for Go dependencies
-  vendorHash = "sha256-wayLE1ZCcQ4hzg0B0Da2HzxQ8lZ57fcX2jnfyc71uCs=";
+  vendorHash = "sha256-veFMlmcf9VrpmvbPom7Y2FblDYIkgpTv6w5Xpzchh9o=";
 
   # Build from the src directory
   subPackages = [ "." ];
