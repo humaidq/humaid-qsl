@@ -55,32 +55,102 @@
     </tr>
   </table>
 
-  {{ if eq .QslRcvd "Y" }}
-  <div class="alert alert-green">
-    <h5 class="alert-title">Tnx QSL!</h5>
-    <p>Thank you for the QSL card, it has been received and appreciated!</p>
-    {{if eq .QslSent "Y"}}
-    <p>A QSL card was already sent to your address.</p>
-    {{else}}
-    <p>I will be sending a response QSL card soon!</p>
-    {{end}}
-  </div>
-  {{else}}
-    {{ if eq .QslSent "Y" }}
-    <div class="alert alert-green">
-      <h5 class="alert-title">QSL Card Sent</h5>
-      <p>A QSL card has been sent to your mailing address!</p>
+  <div class="qso-details-container">
+    <div class="qsl-section">
+      <h4>QSL</h4>
+      
+      <!-- Thank you alert for received QSL -->
+      {{ if eq .QslRcvd "Y" }}
+      <div class="alert alert-green">
+        <h5 class="alert-title">Tnx QSL!</h5>
+        <p>Thank you for sending your QSL card! Much appreciated.</p>
+      </div>
+      {{ end }}
+      
+      <!-- Paper QSL Status -->
+      <div class="confirmation-item">
+        <div class="confirmation-info">
+          <div class="confirmation-icon paper">📮</div>
+          <div>
+            <div class="confirmation-name">Paper QSL</div>
+            <div class="confirmation-subtitle">Physical Card</div>
+          </div>
+        </div>
+        <div class="confirmation-status">
+          <div class="status-indicator">
+            {{ if eq .QslSent "Y" }}
+            <div class="status-dot active paper"></div>
+            <span class="status-text active">Sent</span>
+            {{ else }}
+            <a href="mailto:qsl@huma.id?subject={{ .Call }}: QSL Card Request&body=Hello,%0A%0AI would like to request a QSL card for our contact:%0A%0ACall Sign: {{ .Call }}%0ADate/Time: {{ .FormatQSOTime }}%0AFrequency: {{ .Freq }} MHz%0A%0AMy mailing address:%0A[Please write your full mailing address here]%0A%0AThank you!" class="status-request-link">
+              <div class="status-dot inactive"></div>
+              <span class="status-text inactive">Request</span>
+            </a>
+            {{ end }}
+          </div>
+          <div class="status-indicator">
+            <div class="status-dot {{ if eq .QslRcvd "Y" }}active paper{{ else }}inactive{{ end }}"></div>
+            <span class="status-text {{ if eq .QslRcvd "Y" }}active{{ else }}inactive{{ end }}">Received</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Digital Confirmations -->
+      <div class="confirmation-item">
+        <div class="confirmation-info">
+          <div class="confirmation-icon lotw">🌍</div>
+          <div>
+            <div class="confirmation-name">Logbook of the World</div>
+            <div class="confirmation-subtitle">ARRL LoTW</div>
+          </div>
+        </div>
+        <div class="confirmation-status">
+          <div class="status-indicator">
+            <div class="status-dot {{ if eq .LotwSent "Y" }}active{{ else }}inactive{{ end }}"></div>
+            <span class="status-text {{ if eq .LotwSent "Y" }}active{{ else }}inactive{{ end }}">Sent</span>
+          </div>
+          <div class="status-indicator">
+            <div class="status-dot {{ if eq .LotwRcvd "Y" }}active{{ else }}inactive{{ end }}"></div>
+            <span class="status-text {{ if eq .LotwRcvd "Y" }}active{{ else }}inactive{{ end }}">Received</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="confirmation-item">
+        <div class="confirmation-info">
+          <div class="confirmation-icon eqsl">💻</div>
+          <div>
+            <div class="confirmation-name">Electronic QSL</div>
+            <div class="confirmation-subtitle">eQSL.cc</div>
+          </div>
+        </div>
+        <div class="confirmation-status">
+          <div class="status-indicator">
+            <div class="status-dot {{ if eq .EqslSent "Y" }}active{{ else }}inactive{{ end }}"></div>
+            <span class="status-text {{ if eq .EqslSent "Y" }}active{{ else }}inactive{{ end }}">Sent</span>
+          </div>
+          <div class="status-indicator">
+            <div class="status-dot {{ if eq .EqslRcvd "Y" }}active{{ else }}inactive{{ end }}"></div>
+            <span class="status-text {{ if eq .EqslRcvd "Y" }}active{{ else }}inactive{{ end }}">Received</span>
+          </div>
+        </div>
+      </div>
     </div>
-    {{ else if or (or (eq .QslSent "N") (eq .QslSent "")) (eq .QslSent "I") }}
-    <div class="alert alert-grey">
-      <h5 class="alert-title">QSL Card Available</h5>
-      <p>If you would like a free QSL card delivered, <a href="mailto:qsl@huma.id?subject={{ .Call }}: QSL Card Request&body=Hello,%0A%0AI would like to request a QSL card for our contact:%0A%0ACall Sign: {{ .Call }}%0ADate/Time: {{ .FormatQSOTime }}%0AFrequency: {{ .Freq }} MHz%0A%0AMy mailing address:%0A[Please write your full mailing address here]%0A%0AThank you!">click here</a>.</p>
-      {{if eq .QslSent "I"}}
-      <p>I have checked your QRZ.com page, and couldn't find a valid address. So please update your mailing address on QRZ.com or send it with the email.</p>
-      {{end}}
+
+    {{ if $.MapURL }}
+    <div class="qso-map">
+      <h4>Grid Square Map</h4>
+      <div class="map-container">
+        <img src="{{ $.MapURL }}" alt="Grid square map showing {{ .MyGridSquare }} to {{ .GridSquare }}" class="map-image" />
+        <p class="map-legend">
+          <span class="marker-red">●</span> {{ .MyGridSquare }} (A66H) 
+          <span class="map-arrow">↔</span> 
+          <span class="marker-blue">●</span> {{ .GridSquare }} ({{ .Call }})
+        </p>
+      </div>
     </div>
     {{ end }}
-  {{ end }}
+  </div>
 
 </div>
 {{ end }}

@@ -47,6 +47,10 @@ type QSO struct {
 	TxPwr        string
 	QslSent      QslStatus
 	QslRcvd      QslStatus
+	LotwSent     QslStatus
+	LotwRcvd     QslStatus
+	EqslSent     QslStatus
+	EqslRcvd     QslStatus
 	Timestamp    time.Time // Parsed datetime for easier searching
 }
 
@@ -173,6 +177,14 @@ func (p *ADIFParser) parseRecord(record string) (QSO, error) {
 			qso.QslSent = QslStatus(fieldValue)
 		case "qsl_rcvd":
 			qso.QslRcvd = QslStatus(fieldValue)
+		case "lotw_qsl_sent":
+			qso.LotwSent = QslStatus(fieldValue)
+		case "lotw_qsl_rcvd":
+			qso.LotwRcvd = QslStatus(fieldValue)
+		case "eqsl_qsl_sent":
+			qso.EqslSent = QslStatus(fieldValue)
+		case "eqsl_qsl_rcvd":
+			qso.EqslRcvd = QslStatus(fieldValue)
 		}
 	}
 
@@ -326,6 +338,62 @@ func (p *ADIFParser) GetLatestQSOs(limit int) []QSO {
 // GetQSOs returns all parsed QSOs
 func (p *ADIFParser) GetQSOs() []QSO {
 	return p.QSOs
+}
+
+// GetLatestQSO returns the most recent QSO by timestamp
+func (p *ADIFParser) GetLatestQSO() *QSO {
+	if len(p.QSOs) == 0 {
+		return nil
+	}
+
+	var latest *QSO
+	for i := range p.QSOs {
+		if p.QSOs[i].Timestamp.IsZero() {
+			continue
+		}
+		if latest == nil || p.QSOs[i].Timestamp.After(latest.Timestamp) {
+			latest = &p.QSOs[i]
+		}
+	}
+
+	return latest
+}
+
+// GetPaperQSLHallOfFame returns deduplicated QSOs where paper QSL was received
+func (p *ADIFParser) GetPaperQSLHallOfFame() []QSO {
+	seen := make(map[string]QSO)
+	
+	for _, qso := range p.QSOs {
+		// Only include QSOs where paper QSL was received
+		if qso.QslRcvd == QslYes {
+			// Use callsign as the key for deduplication
+			if existing, exists := seen[qso.Call]; !exists {
+				seen[qso.Call] = qso
+			} else {
+				// If we already have this callsign, prefer the one with a name
+				if qso.Name != "" && existing.Name == "" {
+					seen[qso.Call] = qso
+				}
+			}
+		}
+	}
+	
+	// Convert map to slice and sort by callsign
+	var result []QSO
+	for _, qso := range seen {
+		result = append(result, qso)
+	}
+	
+	// Simple bubble sort by callsign
+	for i := 0; i < len(result)-1; i++ {
+		for j := 0; j < len(result)-i-1; j++ {
+			if result[j].Call > result[j+1].Call {
+				result[j], result[j+1] = result[j+1], result[j]
+			}
+		}
+	}
+	
+	return result
 }
 
 // FormatQSOTime formats QSO timestamp for display

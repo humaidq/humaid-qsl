@@ -9,11 +9,15 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/flamego/csrf"
 	"github.com/flamego/flamego"
 	"github.com/flamego/session"
@@ -45,8 +49,75 @@ var CmdStart = &cli.Command{
 			Usage:    "path to ADIF file containing QSO logs",
 			Required: true,
 		},
+		&cli.DurationFlag{
+			Name:  "reload-interval",
+			Value: 5 * time.Minute,
+			Usage: "interval to reload the ADIF file (e.g., 5m, 1h, 30s)",
+		},
 	},
 	Action: start,
+}
+
+// ReloadableParser wraps ADIFParser with automatic reloading capability
+type ReloadableParser struct {
+	parser   *utils.ADIFParser
+	filePath string
+	mutex    sync.RWMutex
+}
+
+// NewReloadableParser creates a new reloadable parser
+func NewReloadableParser(filePath string) (*ReloadableParser, error) {
+	rp := &ReloadableParser{
+		filePath: filePath,
+	}
+	
+	if err := rp.reload(); err != nil {
+		return nil, err
+	}
+	
+	return rp, nil
+}
+
+// reload reloads the ADIF file
+func (rp *ReloadableParser) reload() error {
+	file, err := os.Open(rp.filePath)
+	if err != nil {
+		return fmt.Errorf("failed to open ADIF file: %w", err)
+	}
+	defer file.Close()
+
+	parser := utils.NewADIFParser()
+	if err := parser.ParseFile(file); err != nil {
+		return fmt.Errorf("failed to parse ADIF file: %w", err)
+	}
+
+	rp.mutex.Lock()
+	rp.parser = parser
+	rp.mutex.Unlock()
+
+	log.Printf("Reloaded %d QSOs from %s", len(parser.GetQSOs()), rp.filePath)
+	return nil
+}
+
+// startReloading starts the periodic reload goroutine
+func (rp *ReloadableParser) startReloading(interval time.Duration) {
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		
+		for range ticker.C {
+			if err := rp.reload(); err != nil {
+				log.Printf("Failed to reload ADIF file: %v", err)
+			}
+		}
+	}()
+}
+
+// getParser returns the current parser (thread-safe)
+func (rp *ReloadableParser) getParser() *utils.ADIFParser {
+	rp.mutex.RLock()
+	defer rp.mutex.RUnlock()
+	return rp.parser
 }
 
 // populateHomeData fills the template data with common home page data
@@ -54,24 +125,62 @@ func populateHomeData(data template.Data, parser *utils.ADIFParser, csrf csrf.CS
 	data["TotalQSOs"] = parser.GetTotalQSOCount()
 	data["UniqueCountries"] = parser.GetUniqueCountriesCount()
 	data["LatestQSOs"] = parser.GetLatestQSOs(30)
+	data["PaperQSLHallOfFame"] = parser.GetPaperQSLHallOfFame()
 	data["CSRFToken"] = csrf.Token()
+
+	// Add latest QSO information
+	latestQSO := parser.GetLatestQSO()
+	if latestQSO != nil && !latestQSO.Timestamp.IsZero() {
+		data["LatestQSODate"] = latestQSO.FormatDate()
+		data["LatestQSOTimeAgo"] = humanize.Time(latestQSO.Timestamp)
+	}
+}
+
+// generateMapIfNeeded generates a map image if it doesn't already exist
+func generateMapIfNeeded(fileName, myGrid, theirGrid string) {
+	mapPath := filepath.Join("maps", fileName)
+	
+	// Check if map already exists
+	if _, err := os.Stat(mapPath); err == nil {
+		return
+	}
+	
+	// Generate the map
+	if err := generateMap(fileName, myGrid, theirGrid); err != nil {
+		log.Printf("Failed to generate map %s: %v", fileName, err)
+	}
+}
+
+// generateMap creates a map image showing the two grid locations
+func generateMap(fileName, myGrid, theirGrid string) error {
+	config := utils.MapConfig{
+		Width:      600,
+		Height:     400,
+		Zoom:       0, // Will be auto-calculated
+		OutputPath: filepath.Join("maps", fileName),
+	}
+	
+	return utils.CreateGridMap(myGrid, theirGrid, config)
 }
 
 func start(ctx context.Context, cmd *cli.Command) (err error) {
-	// Load ADIF file
+	// Create maps directory if it doesn't exist
+	if err := os.MkdirAll("maps", 0755); err != nil {
+		return fmt.Errorf("failed to create maps directory: %w", err)
+	}
+
+	// Load ADIF file with reloading capability
 	adifPath := cmd.String("adif")
-	adifFile, err := os.Open(adifPath)
+	reloadInterval := cmd.Duration("reload-interval")
+	
+	reloadableParser, err := NewReloadableParser(adifPath)
 	if err != nil {
-		return fmt.Errorf("failed to open ADIF file: %w", err)
+		return fmt.Errorf("failed to initialize reloadable parser: %w", err)
 	}
-	defer adifFile.Close()
-
-	parser := utils.NewADIFParser()
-	if err := parser.ParseFile(adifFile); err != nil {
-		return fmt.Errorf("failed to parse ADIF file: %w", err)
-	}
-
-	log.Printf("Loaded %d QSOs from %s", len(parser.GetQSOs()), adifPath)
+	
+	// Start automatic reloading
+	reloadableParser.startReloading(reloadInterval)
+	log.Printf("Started ADIF file reloading every %v", reloadInterval)
 
 	f := flamego.Classic()
 
@@ -91,7 +200,7 @@ func start(ctx context.Context, cmd *cli.Command) (err error) {
 
 	// Inject ADIF parser into context
 	f.Use(func(c flamego.Context) {
-		c.Map(parser)
+		c.Map(reloadableParser.getParser())
 	})
 
 	// Add request logging middleware
@@ -122,12 +231,81 @@ func start(ctx context.Context, cmd *cli.Command) (err error) {
 
 	f.Get("/qrz", func(t template.Template, data template.Data, parser *utils.ADIFParser) {
 		data["LatestQSOs"] = parser.GetLatestQSOs(30)
+		data["PaperQSLHallOfFame"] = parser.GetPaperQSLHallOfFame()
 		t.HTML(http.StatusOK, "qrz")
 	})
 
-	f.Get("/{callsign}-{timestamp}", func(c flamego.Context, t template.Template, data template.Data, parser *utils.ADIFParser) {
-		callsign := strings.ToUpper(c.Param("callsign"))
-		timestampStr := c.Param("timestamp")
+	// PNG route handler for serving cached map images (must be before the general route)
+	f.Get("/{path}.png", func(c flamego.Context, w http.ResponseWriter, parser *utils.ADIFParser) (int, error) {
+		path := c.Param("path")
+		
+		// Split on the last dash to separate callsign and timestamp
+		lastDash := strings.LastIndex(path, "-")
+		if lastDash == -1 {
+			return http.StatusNotFound, nil
+		}
+		
+		encodedCallsign := path[:lastDash]
+		timestampStr := path[lastDash+1:]
+		
+		callsign, err := url.QueryUnescape(encodedCallsign)
+		if err != nil {
+			return http.StatusNotFound, nil
+		}
+		callsign = strings.ToUpper(callsign)
+		
+		// Use URL-safe filename by replacing special characters
+		safeCallsign := strings.ReplaceAll(callsign, "/", "_")
+		mapFileName := fmt.Sprintf("%s-%s.png", safeCallsign, timestampStr)
+		mapPath := filepath.Join("maps", mapFileName)
+		
+		// Check if map file exists
+		if _, err := os.Stat(mapPath); os.IsNotExist(err) {
+			// Try to find the QSO and generate the map
+			timestamp, err := strconv.ParseInt(timestampStr, 10, 64)
+			if err != nil {
+				return http.StatusNotFound, nil
+			}
+			
+			searchTime := time.Unix(timestamp, 0)
+			qsos := parser.SearchQSO(callsign, searchTime, 10)
+			
+			if len(qsos) == 0 || qsos[0].MyGridSquare == "" || qsos[0].GridSquare == "" {
+				return http.StatusNotFound, nil
+			}
+			
+			// Generate map synchronously for immediate serving
+			if err := generateMap(mapFileName, qsos[0].MyGridSquare, qsos[0].GridSquare); err != nil {
+				log.Printf("Failed to generate map for %s: %v", mapFileName, err)
+				return http.StatusInternalServerError, nil
+			}
+		}
+		
+		// Serve the map file
+		w.Header().Set("Content-Type", "image/png")
+		http.ServeFile(w, c.Request().Request, mapPath)
+		return http.StatusOK, nil
+	})
+
+	f.Get("/{path}", func(c flamego.Context, t template.Template, data template.Data, parser *utils.ADIFParser) {
+		path := c.Param("path")
+		
+		// Split on the last dash to separate callsign and timestamp
+		lastDash := strings.LastIndex(path, "-")
+		if lastDash == -1 {
+			c.Redirect("/", http.StatusFound)
+			return
+		}
+		
+		encodedCallsign := path[:lastDash]
+		timestampStr := path[lastDash+1:]
+		
+		callsign, err := url.QueryUnescape(encodedCallsign)
+		if err != nil {
+			c.Redirect("/", http.StatusFound)
+			return
+		}
+		callsign = strings.ToUpper(callsign)
 
 		// Parse Unix timestamp
 		timestamp, err := strconv.ParseInt(timestampStr, 10, 64)
@@ -150,9 +328,23 @@ func start(ctx context.Context, cmd *cli.Command) (err error) {
 		currentQSO := qsos[0]
 		allQSOs := parser.GetQSOsByCallsign(callsign)
 
+		// Generate or check for cached map
+		mapURL := ""
+		if currentQSO.MyGridSquare != "" && currentQSO.GridSquare != "" {
+			safeCallsign := strings.ReplaceAll(callsign, "/", "_")
+			mapFileName := fmt.Sprintf("%s-%s.png", safeCallsign, timestampStr)
+			// Use encoded callsign for the URL
+			encodedCallsign := url.QueryEscape(callsign)
+			mapURL = fmt.Sprintf("/%s-%s.png", encodedCallsign, timestampStr)
+			
+			// Generate map in background if it doesn't exist
+			go generateMapIfNeeded(mapFileName, currentQSO.MyGridSquare, currentQSO.GridSquare)
+		}
+
 		data["QSO"] = currentQSO
 		data["AllQSOs"] = allQSOs
 		data["Callsign"] = callsign
+		data["MapURL"] = mapURL
 		t.HTML(http.StatusOK, "result")
 	})
 
@@ -221,8 +413,9 @@ func start(ctx context.Context, cmd *cli.Command) (err error) {
 		// Redirect to unique QSO URL
 		qso := qsos[0]
 		unixTimestamp := qso.Timestamp.Unix()
-		url := fmt.Sprintf("/%s-%d", qso.Call, unixTimestamp)
-		c.Redirect(url, http.StatusFound)
+		encodedCallsign := url.QueryEscape(qso.Call)
+		redirectURL := fmt.Sprintf("/%s-%d", encodedCallsign, unixTimestamp)
+		c.Redirect(redirectURL, http.StatusFound)
 	})
 
 	port := cmd.String("port")

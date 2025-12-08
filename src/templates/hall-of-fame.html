@@ -1,0 +1,4 @@
+<h3>Paper QSL Hall of Fame</h3>
+<div class="hall-of-fame">
+  {{ range $index, $qso := .PaperQSLHallOfFame }}{{ if $index }}, {{ end }}{{ if $qso.GetFlagCode }}<img src="https://flagcdn.com/{{ $qso.GetFlagCode }}.svg" alt="{{ $qso.Country }}" class="country-flag" />{{ end }}<span class="callsign">{{ $qso.Call }}</span>{{ if $qso.Name }} <span class="name">({{ $qso.Name }})</span>{{ end }}{{ end }}
+</div>

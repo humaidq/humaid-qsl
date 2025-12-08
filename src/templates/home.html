@@ -97,10 +97,18 @@
   <button type="submit" class="btn wide">Find QSO →</button>
 </form>
 
+{{ if .LatestQSODate }}
+<p class="muted-text" style="margin-top: 0.5em; text-align: center;">
+  Latest QSO: {{ .LatestQSODate }} ({{ .LatestQSOTimeAgo }})
+</p>
+{{ end }}
+
 <h3>Statistics</h3>
 <p><strong>Total QSOs:</strong> {{ .TotalQSOs }} | <strong>Unique Countries:</strong> {{ .UniqueCountries }}</p>
 
 {{ template "latest-qsos" . }}
+
+{{ template "hall-of-fame" . }}
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
